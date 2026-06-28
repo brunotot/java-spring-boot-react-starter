@@ -126,8 +126,8 @@ jobs:
           echo "Deploying JAR: $JAR_FILE"
 
           cp "$JAR_FILE" /opt/apps/starter/starter.jar
-          sudo -n systemctl restart starter
-          sudo -n systemctl status starter --no-pager
+          sudo -n /usr/bin/systemctl restart starter.service
+          /usr/bin/systemctl status starter.service --no-pager
 
       - name: Nothing to deploy
         if: steps.changes.outputs.frontend_changed != 'true' && steps.changes.outputs.backend_changed != 'true'

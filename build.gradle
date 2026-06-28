@@ -8,10 +8,6 @@ plugins {
 group = 'com.brunotot'
 version = '0.0.1-SNAPSHOT'
 
-def frontendDir = "$projectDir/frontend"
-def frontendDistDir = "$frontendDir/dist"
-def npmCommand = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
-
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
@@ -59,37 +55,6 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 	jvmArgs '-Xshare:off'
-}
-
-tasks.register('frontendNpmInstall', Exec) {
-	workingDir frontendDir
-	commandLine npmCommand, 'install'
-	inputs.files("$frontendDir/package.json", "$frontendDir/package-lock.json")
-	outputs.dir("$frontendDir/node_modules")
-}
-
-tasks.register('frontendBuild', Exec) {
-	dependsOn tasks.named('frontendNpmInstall')
-	workingDir frontendDir
-	commandLine npmCommand, 'run', 'build'
-	inputs.dir("$frontendDir/src")
-	inputs.files("$frontendDir/package.json", "$frontendDir/package-lock.json", "$frontendDir/vite.config.ts", "$frontendDir/tsconfig.json", "$frontendDir/tsconfig.app.json", "$frontendDir/tsconfig.node.json", "$frontendDir/index.html")
-	outputs.dir(frontendDistDir)
-}
-
-tasks.named('processResources') {
-	dependsOn tasks.named('frontendBuild')
-	from(frontendDistDir) {
-		into 'static'
-	}
-}
-
-tasks.named('bootJar') {
-	dependsOn tasks.named('frontendBuild')
-}
-
-tasks.named('bootRun') {
-	dependsOn tasks.named('frontendBuild')
 }
 
 testlogger {
