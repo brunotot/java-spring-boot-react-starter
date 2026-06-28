@@ -1,0 +1,7 @@
+{
+  "editor.formatOnSave": true,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "github.gitAuthentication": false,
+  "git.terminalAuthentication": false,
+  "files.encoding": "utf8"
+}
