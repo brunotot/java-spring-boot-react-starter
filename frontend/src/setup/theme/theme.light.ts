@@ -1,0 +1,126 @@
+import { THEME_COMPONENTS } from "@/setup/theme/theme.components";
+import { createTheme } from "@mui/material/styles";
+
+const BACKGROUND_PAPER = "#FFFFFF";
+const BACKGROUND_DEFAULT = "#F2F5FA";
+const TEXT_PRIMARY = "rgba(0, 0, 0, 0.87)";
+const TEXT_SECONDARY = "rgba(0, 0, 0, 0.6)";
+const TEXT_DISABLED = "rgba(0, 0, 0, 0.38)";
+const DIVIDER = "rgba(208, 213, 221, 0.3)";
+
+export const THEME_LIGHT = createTheme({
+  cssVariables: true,
+  shape: {
+    borderRadius: 8,
+  },
+  typography: {
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+  },
+  components: THEME_COMPONENTS,
+  palette: {
+    mode: "light",
+    common: {
+      white: "#FFFFFF",
+      black: "#151515",
+    },
+    primary: {
+      50: "#F0FAFF",
+      100: "#E0F3FE",
+      200: "#B9E9FE",
+      300: "#7CD9FD",
+      400: "#36C7FA",
+      500: "#0CB0EB",
+      600: "#009EE0",
+      700: "#0170A3",
+      800: "#065F86",
+      900: "#0B4F6F",
+      950: "#07324A",
+      main: "#009EE0",
+    },
+    grey: {
+      25: "#FCFCFD",
+      50: "#F9FAFB",
+      100: "#F2F4F7",
+      200: "#EAECF0",
+      300: "#D0D5DD",
+      400: "#98A2B3",
+      500: "#667085",
+      600: "#475467",
+      700: "#344054",
+      800: "#1D2939",
+      900: "#101828",
+      950: "#0C111D",
+      975: "#070A12",
+    },
+    success: {
+      50: "#ECFDF3",
+      100: "#DCFAE6",
+      200: "#ABEFC6",
+      300: "#6CE9A6",
+      400: "#47CD89",
+      500: "#12B76A",
+      600: "#0A9959",
+      700: "#027A48",
+      800: "#085D3A",
+      900: "#074D31",
+      950: "#053321",
+      main: "#12B76A",
+      contrastText: "#FFFFFF",
+    },
+    warning: {
+      50: "#FFFAEB",
+      100: "#FEF0C7",
+      200: "#FEDF89",
+      300: "#FEC84B",
+      400: "#FDB022",
+      500: "#F79009",
+      600: "#DC6803",
+      700: "#B54708",
+      800: "#7B3005",
+      900: "#4A1D03",
+      950: "#341402",
+      main: "#F79009",
+      contrastText: "#FFFFFF",
+    },
+    info: {
+      50: "#EFF8FF",
+      100: "#D1E9FF",
+      200: "#B2DDFF",
+      300: "#84CAFF",
+      400: "#53B1FD",
+      500: "#2E90FA",
+      600: "#1570EF",
+      700: "#175CD3",
+      800: "#1849A9",
+      900: "#194185",
+      950: "#102A56",
+      main: "#2E90FA",
+      contrastText: "#FFFFFF",
+    },
+    error: {
+      50: "#FEF3F2",
+      100: "#FEE4E2",
+      200: "#FECDCA",
+      300: "#FDA29B",
+      400: "#F97066",
+      500: "#F04438",
+      600: "#D92D20",
+      700: "#B42318",
+      800: "#871A12",
+      900: "#481411",
+      950: "#320E0C",
+      main: "#F04438",
+      contrastText: "#FFFFFF",
+    },
+    background: {
+      paper: BACKGROUND_PAPER,
+      default: BACKGROUND_DEFAULT,
+    },
+    text: {
+      primary: TEXT_PRIMARY,
+      secondary: TEXT_SECONDARY,
+      disabled: TEXT_DISABLED,
+    },
+    divider: DIVIDER,
+  },
+});

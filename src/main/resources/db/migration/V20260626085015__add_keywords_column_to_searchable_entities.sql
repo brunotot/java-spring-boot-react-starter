@@ -1,0 +1,1 @@
+ALTER TABLE country ADD COLUMN keywords VARCHAR(2048) NULL;

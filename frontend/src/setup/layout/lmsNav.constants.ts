@@ -1,0 +1,10 @@
+export const NAV_COLLAPSED_WIDTH = 80;
+export const NAV_DEFAULT_EXPANDED_WIDTH = 240;
+export const NAV_MIN_EXPANDED_WIDTH = 180;
+export const NAV_MAX_EXPANDED_WIDTH = 420;
+export const NAV_COLLAPSE_TRIGGER_WIDTH = 120;
+
+export const NAV_RESIZE_HANDLE_WIDTH = 6;
+export const NAV_RESIZE_HITBOX_WIDTH = 14;
+export const NAV_RESIZE_HOVER_OPACITY = 0.35;
+export const NAV_RESIZE_ACTIVE_OPACITY = 0.7;

@@ -1,0 +1,107 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'com.adarshr.test-logger' version '4.0.0'
+}
+
+group = 'com.brunotot'
+version = '0.0.1-SNAPSHOT'
+
+def frontendDir = "$projectDir/frontend"
+def frontendDistDir = "$frontendDir/dist"
+def npmCommand = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-h2console'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0'
+	implementation 'org.flywaydb:flyway-database-postgresql'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.0'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+	testImplementation 'org.testcontainers:testcontainers-postgresql'
+	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.mapstruct:mapstruct-processor:1.6.0'
+
+    // MapStruct and Lombok
+    implementation 'org.mapstruct:mapstruct:1.6.0'
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+    compileOnly 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	jvmArgs '-Xshare:off'
+}
+
+tasks.register('frontendNpmInstall', Exec) {
+	workingDir frontendDir
+	commandLine npmCommand, 'install'
+	inputs.files("$frontendDir/package.json", "$frontendDir/package-lock.json")
+	outputs.dir("$frontendDir/node_modules")
+}
+
+tasks.register('frontendBuild', Exec) {
+	dependsOn tasks.named('frontendNpmInstall')
+	workingDir frontendDir
+	commandLine npmCommand, 'run', 'build'
+	inputs.dir("$frontendDir/src")
+	inputs.files("$frontendDir/package.json", "$frontendDir/package-lock.json", "$frontendDir/vite.config.ts", "$frontendDir/tsconfig.json", "$frontendDir/tsconfig.app.json", "$frontendDir/tsconfig.node.json", "$frontendDir/index.html")
+	outputs.dir(frontendDistDir)
+}
+
+tasks.named('processResources') {
+	dependsOn tasks.named('frontendBuild')
+	from(frontendDistDir) {
+		into 'static'
+	}
+}
+
+tasks.named('bootJar') {
+	dependsOn tasks.named('frontendBuild')
+}
+
+tasks.named('bootRun') {
+	dependsOn tasks.named('frontendBuild')
+}
+
+testlogger {
+	theme 'mocha'
+	showStandardStreams = false
+	showSimpleNames = true
+	showPassed = true
+	showSkipped = true
+	showFailed = true
+	showSummary = true
+	showExceptions = true
+	showStackTraces = false
+	showCauses = true
+	slowThreshold = 2000
+}
