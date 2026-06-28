@@ -35,3 +35,9 @@ out/
 
 lms-front
 front-ui
+
+# VS Code local config
+.vscode/*
+
+# Allow example VS Code configs
+!.vscode/*.example.json
