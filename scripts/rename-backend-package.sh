@@ -113,6 +113,38 @@ set_property_value() {
   mv "$tmp_file" "$file"
 }
 
+replace_gradle_root_project_name() {
+  local file="settings.gradle"
+  local old_artifact="$1"
+  local new_artifact="$2"
+
+  [ -f "$file" ] || fail "Required file does not exist: $file"
+
+  local old_artifact_regex
+  old_artifact_regex="$(escape_regex "$old_artifact")"
+
+  if ! grep -Eq "^[[:space:]]*rootProject\.name[[:space:]]*=[[:space:]]*['\"]${old_artifact_regex}['\"]" "$file"; then
+    fail "Could not find matching rootProject.name declaration in $file: $old_artifact"
+  fi
+
+  local tmp_file
+  tmp_file="$(mktemp)"
+
+  awk -v old_artifact="$old_artifact" -v new_artifact="$new_artifact" '
+    /^[[:space:]]*rootProject\.name[[:space:]]*=/ && updated == 0 {
+      line = $0
+      gsub("'"'"'" old_artifact "'"'"'", "'"'"'" new_artifact "'"'"'", line)
+      gsub("\"" old_artifact "\"", "\"" new_artifact "\"", line)
+      print line
+      updated = 1
+      next
+    }
+    { print }
+  ' "$file" > "$tmp_file"
+
+  mv "$tmp_file" "$file"
+}
+
 replace_gradle_group() {
   local file="build.gradle"
   local old_group="$1"
@@ -213,6 +245,7 @@ else
 fi
 
 replace_gradle_group "$OLD_GROUP" "$NEW_GROUP"
+replace_gradle_root_project_name "$OLD_ARTIFACT" "$NEW_ARTIFACT"
 
 move_package_dir "src/main/java" "$OLD_PACKAGE_PATH" "$NEW_PACKAGE_PATH"
 
@@ -232,5 +265,6 @@ set_property_value "src/main/resources/application-dev.properties" "spring.appli
 echo "Backend package renamed successfully:"
 echo "  Package: $OLD_PACKAGE -> $NEW_PACKAGE"
 echo "  Gradle group: $OLD_GROUP -> $NEW_GROUP"
+echo "  rootProject.name: $OLD_ARTIFACT -> $NEW_ARTIFACT"
 echo "  spring.application.name: $NEW_ARTIFACT"
 echo "  spring.application.name dev: ${NEW_ARTIFACT}-dev"
