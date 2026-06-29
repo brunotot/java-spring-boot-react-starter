@@ -53,20 +53,4 @@ bash ./scripts/rename-backend-package.sh \
   --new-group="$(bash ./scripts/get-local-variable.sh --key=LOCAL_REPO_NEW_GROUP_ID)" \
   --new-artifact="$(bash ./scripts/get-local-variable.sh --key=LOCAL_REPO_NEW_ARTIFACT_ID)"
 
-echo "Step 8: Add, commit, and push changes"
-
-if ! git check-ignore -q .local/variables.env; then
-  fail ".local/variables.env is not ignored by git. Add .local/ to .gitignore before committing."
-fi
-
-git add .
-
-if git diff --cached --quiet; then
-  echo "No staged changes to commit."
-else
-  git commit -m "Initial local setup"
-fi
-
-git push
-
-echo "Local setup completed."
+echo "Local setup completed. You can now commit and push the changes to your repository."
