@@ -29,3 +29,13 @@ mkdir -p .vscode && ./scripts/substitute-vars.sh --vars-file=.local/variables.en
 ```bash
 ./scripts/substitute-vars.sh --vars-file=.local/variables.env --input-file=templates/deployment-guide-minimal.template.md --output-file=.local/DEPLOYMENT_GUIDE_MINIMAL.gen.md
 ```
+
+# 6: Apply project-specific patches
+
+```bash
+./scripts/rename-backend-package.sh \
+  --old-group="$(./scripts/get-local-variable.sh --key=LOCAL_REPO_OLD_GROUP_ID)" \
+  --old-artifact="$(./scripts/get-local-variable.sh --key=LOCAL_REPO_OLD_ARTIFACT_ID)" \
+  --new-group="$(./scripts/get-local-variable.sh --key=LOCAL_REPO_NEW_GROUP_ID)" \
+  --new-artifact="$(./scripts/get-local-variable.sh --key=LOCAL_REPO_NEW_ARTIFACT_ID)"
+```
