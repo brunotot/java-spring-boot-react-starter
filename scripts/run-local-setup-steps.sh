@@ -18,27 +18,27 @@ VARS_FILE=".local/variables.env"
 [ -f "scripts/get-local-variable.sh" ] || fail "Missing scripts/get-local-variable.sh"
 [ -f "scripts/rename-backend-package.sh" ] || fail "Missing scripts/rename-backend-package.sh"
 
-echo "Step 3: Generate .vscode/settings.json"
+echo "Step 1: Generate .vscode/settings.json"
 mkdir -p .vscode
 bash ./scripts/substitute-vars.sh \
   --vars-file=.local/variables.env \
   --input-file=templates/vscode-settings.template.json \
   --output-file=.vscode/settings.json
 
-echo "Step 4: Generate .vscode/launch.json"
+echo "Step 2: Generate .vscode/launch.json"
 mkdir -p .vscode
 bash ./scripts/substitute-vars.sh \
   --vars-file=.local/variables.env \
   --input-file=templates/vscode-launch.template.json \
   --output-file=.vscode/launch.json
 
-echo "Step 5: Generate .local/DEPLOYMENT_GUIDE_MINIMAL.gen.md"
+echo "Step 3: Generate .local/DEPLOYMENT_GUIDE_MINIMAL.gen.md"
 bash ./scripts/substitute-vars.sh \
   --vars-file=.local/variables.env \
   --input-file=templates/deployment-guide-minimal.template.md \
   --output-file=.local/DEPLOYMENT_GUIDE_MINIMAL.gen.md
 
-echo "Step 6: Generate .github/workflows/deploy.yml"
+echo "Step 4: Generate .github/workflows/deploy.yml"
 mkdir -p .github/workflows
 bash ./scripts/substitute-vars.sh \
   --vars-file=.local/variables.env \
@@ -46,7 +46,7 @@ bash ./scripts/substitute-vars.sh \
   --output-file=.github/workflows/deploy.yml \
   --ignore-missing=true
 
-echo "Step 7: Apply project-specific patches"
+echo "Step 5: Apply project-specific patches"
 bash ./scripts/rename-backend-package.sh \
   --old-group="$(bash ./scripts/get-local-variable.sh --key=LOCAL_REPO_OLD_GROUP_ID)" \
   --old-artifact="$(bash ./scripts/get-local-variable.sh --key=LOCAL_REPO_OLD_ARTIFACT_ID)" \
