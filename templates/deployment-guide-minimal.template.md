@@ -20,6 +20,7 @@
 - App uses Spring Boot backend + React/Vite frontend.
 - React app is in `frontend/`.
 - Backend API is served under `/api/*`.
+- Frontend is deployed separately from the backend JAR.
 - PostgreSQL is used as production database.
 - GitHub repository already exists.
 - GitHub Actions self-hosted runner will run on the VPS.
@@ -29,20 +30,20 @@
 ## Estimated Time
 
 ```txt
-Repeat deployment with this starter template: 1–2 hours
-First careful deployment with this starter template: 2–3 hours
-With DNS/private registry/CI troubleshooting: 3–5 hours
+Repeat deployment with this starter template: 1-2 hours
+First careful deployment with this starter template: 2-3 hours
+With DNS/private registry/CI troubleshooting: 3-5 hours
 ```
 
 ---
 
 ## Deployment Steps
 
-## Step 1 — Create DNS Record
+## Step 1 - Create DNS Record
 
 `Hetzner - konsoleH dashboard`
 
-- **1.1**: Open `Networking → DNS`
+- **1.1**: Open `Networking -> DNS`
 - **1.2**: Open the domain DNS zone
 - **1.3**: Add new DNS record
 
@@ -67,7 +68,7 @@ ${VPS_IP}
 
 ---
 
-## Step 2 — Connect to VPS
+## Step 2 - Connect to VPS
 
 `Local machine`
 
@@ -81,7 +82,7 @@ ssh ${VPS_DEPLOY_USER}@${VPS_IP}
 
 ---
 
-## Step 3 — Create App Folders
+## Step 3 - Create App Folders
 
 `VPS`
 
@@ -106,7 +107,7 @@ frontend
 
 ---
 
-## Step 4 — Install Runtime Packages
+## Step 4 - Install Runtime Packages
 
 `VPS`
 
@@ -140,7 +141,7 @@ docker compose version
 
 ---
 
-## Step 5 — Create Production Environment File
+## Step 5 - Create Production Environment File
 
 `VPS`
 
@@ -181,7 +182,7 @@ ls -la ${VPS_ENV_PATH}
 
 ---
 
-## Step 6 — Create PostgreSQL Docker Compose
+## Step 6 - Create PostgreSQL Docker Compose
 
 `VPS`
 
@@ -204,7 +205,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ${DB_VOLUME}:/var/lib/postgresql
     ports:
@@ -222,7 +223,7 @@ ls -la ${VPS_APP_DIR}/docker-compose.yml
 
 ---
 
-## Step 7 — Start PostgreSQL
+## Step 7 - Start PostgreSQL
 
 `VPS`
 
@@ -253,7 +254,7 @@ database system is ready to accept connections
 
 ---
 
-## Step 8 — Test PostgreSQL
+## Step 8 - Test PostgreSQL
 
 `VPS`
 
@@ -283,7 +284,7 @@ ${DB_NAME} | ${DB_USER}
 
 ---
 
-## Step 9 — Build Backend Locally
+## Step 9 - Build Backend Locally
 
 `Local machine`
 
@@ -313,7 +314,7 @@ ${VPS_JAR_FILE}
 
 ---
 
-## Step 10 — Upload Backend JAR
+## Step 10 - Upload Backend JAR
 
 `Local machine`
 
@@ -338,7 +339,7 @@ ${VPS_JAR_PATH}
 
 ---
 
-## Step 11 — Create Systemd Service
+## Step 11 - Create Systemd Service
 
 `VPS`
 
@@ -391,7 +392,7 @@ Active: active (running)
 
 ---
 
-## Step 12 — Test Backend Locally on VPS
+## Step 12 - Test Backend Locally on VPS
 
 `VPS`
 
@@ -401,15 +402,31 @@ Active: active (running)
 curl -I http://127.0.0.1:${APP_BACKEND_PORT}
 ```
 
-- **12.2**: Should output a valid HTTP response, for example
+- **12.2**: Expected result
 
 ```txt
-HTTP/1.1 200
+Any HTTP response means the backend process is reachable on the configured port.
+```
+
+- **12.3**: Important note
+
+```txt
+The frontend is no longer bundled into the backend JAR.
+Because of that, requesting / directly at this stage may return 404 or 500.
+That is acceptable for this connectivity check.
+```
+
+- **12.4**: If curl cannot connect, inspect service status and logs
+
+```bash
+sudo systemctl status ${VPS_SYSTEMD_SERVICE} --no-pager -l || true
+sudo journalctl -u ${VPS_SYSTEMD_SERVICE} --no-pager -n 120
+ss -ltnp | grep -E ':${APP_BACKEND_PORT}|java' || true
 ```
 
 ---
 
-## Step 13 — Build Frontend Locally
+## Step 13 - Build Frontend Locally
 
 `Local machine`
 
@@ -441,7 +458,7 @@ assets
 
 ---
 
-## Step 14 — Upload Frontend Static Files
+## Step 14 - Upload Frontend Static Files
 
 `Local machine`
 
@@ -467,7 +484,7 @@ assets
 
 ---
 
-## Step 15 — Configure Caddy
+## Step 15 - Configure Caddy
 
 `VPS`
 
@@ -505,7 +522,7 @@ sudo systemctl reload caddy
 
 ---
 
-## Step 16 — Verify HTTPS
+## Step 16 - Verify HTTPS
 
 `Local machine`
 
@@ -523,12 +540,12 @@ HTTP/2 200
 
 ---
 
-## Step 17 — Install GitHub Runner
+## Step 17 - Install GitHub Runner
 
-`Local machine`
+`GitHub UI`
 
 - **17.1**: Open GitHub repository in browser
-- **17.2**: Open `Settings → Actions → Runners → New self-hosted runner`
+- **17.2**: Open `Settings -> Actions -> Runners -> New self-hosted runner`
 - **17.3**: Select `Linux` and `x64`
 
 `VPS`
@@ -541,8 +558,34 @@ sudo chown -R ${VPS_DEPLOY_USER}:${VPS_DEPLOY_USER} ${RUNNER_DIR}
 cd ${RUNNER_DIR}
 ```
 
-- **17.5**: Run the download and config commands shown by GitHub
-- **17.6**: Use these runner settings
+- **17.5**: From GitHub's Download section, run only the `curl` and `tar` commands
+
+```txt
+Do not run:
+mkdir actions-runner && cd actions-runner
+
+Step 17.4 already created and entered the correct runner directory.
+```
+
+```bash
+curl -o actions-runner-linux-x64-2.335.1.tar.gz -L https://github.com/actions/runner/releases/download/v2.335.1/actions-runner-linux-x64-2.335.1.tar.gz
+tar xzf ./actions-runner-linux-x64-2.335.1.tar.gz
+```
+
+- **17.6**: Optional hash validation
+
+```txt
+GitHub may show an optional hash validation command.
+It is safe to run, but not required for this guide.
+```
+
+- **17.7**: Run GitHub's Configure command
+
+```bash
+./config.sh --url https://github.com/YOUR_ORG/YOUR_REPO --token YOUR_TOKEN
+```
+
+- **17.8**: Use these runner settings
 
 ```txt
 Runner group: press Enter for Default
@@ -551,11 +594,11 @@ Labels:       ${RUNNER_LABEL}
 Work folder:  press Enter for _work
 ```
 
-- **17.7**: Should output successful runner configuration
+- **17.9**: Should output successful runner configuration
 
 ---
 
-## Step 18 — Install Runner as Service
+## Step 18 - Install Runner as Service
 
 `VPS`
 
@@ -570,14 +613,14 @@ sudo ./svc.sh status
 
 - **18.2**: Should show runner service as running
 
-`Local machine`
+`GitHub UI`
 
-- **18.3**: In GitHub repository, open `Settings → Actions → Runners`
+- **18.3**: In GitHub repository, open `Settings -> Actions -> Runners`
 - **18.4**: Should show runner as `Idle`
 
 ---
 
-## Step 19 — Install Build Tools for Runner
+## Step 19 - Install Build Tools for Runner
 
 `VPS`
 
@@ -610,7 +653,7 @@ rsync --version | head -n 1
 
 ---
 
-## Step 20 — Allow Backend Restart From CI
+## Step 20 - Allow Backend Restart From CI
 
 `VPS`
 
@@ -645,16 +688,15 @@ sudo -n /usr/bin/systemctl restart ${VPS_SYSTEMD_SERVICE}
 
 ---
 
-## Step 21 — Add GitHub Secrets
+## Step 21 - Add GitHub Secrets
 
-`Local machine`
+`GitHub UI`
 
 - **21.1**: Open GitHub repository in browser
-- **21.2**: Open `Settings → Secrets and variables → Actions → New repository secret`
+- **21.2**: Open `Settings -> Secrets and variables -> Actions -> New repository secret`
 - **21.3**: Add private npm registry secrets if private packages are used
 
 ```txt
-RGO_NPM_REGISTRY=https://your.registry.url/
 RGO_NPM_TOKEN=your_token
 ```
 
@@ -662,43 +704,65 @@ RGO_NPM_TOKEN=your_token
 
 ---
 
-## Step 22 — Verify Deployment Workflow
+## Step 22 - Verify Deployment Workflow
 
 `Local machine`
 
-- **22.1**: Verify workflow file exists
+- **22.1**: Verify the local Git remote points to the final repository location
 
 ```bash
 cd ${LOCAL_REPO_ROOT}
+git remote -v
+```
+
+- **22.2**: If needed, update the local Git remote
+
+```bash
+git remote set-url origin https://github.com/YOUR_ORG/YOUR_REPO.git
+git remote -v
+```
+
+- **22.3**: Verify workflow file exists
+
+```bash
 ls -la .github/workflows/deploy.yml
 ```
 
-- **22.2**: Push to `main`
+- **22.4**: Trigger workflow with an empty commit
 
 ```bash
 git status
+git commit --allow-empty -m "Trigger deployment workflow"
 git push origin main
 ```
 
-- **22.3**: Open GitHub Actions
-- **22.4**: Should show workflow run triggered by push
+- **22.5**: Open GitHub Actions
+- **22.6**: Should show workflow run triggered by push
+- **22.7**: Expected behavior for empty commit
+
+```txt
+The workflow should start.
+Because the empty commit does not change backend or frontend source files,
+the actual backend and frontend build/deploy jobs may be skipped.
+The important result is that the workflow trigger and change-detection job run successfully.
+```
 
 ---
 
-## Step 23 — Test Frontend-Only Deploy
+## Step 23 - Test Frontend-Only Deploy
 
 `Local machine`
 
-- **23.1**: Change a file under
+- **23.1**: Change a file under `frontend/src/`
 
-```txt
-frontend/src/
+```bash
+cd ${LOCAL_REPO_ROOT}
+printf "\n// Frontend-only deployment test: $(date -Iseconds)\n" >> frontend/src/main.tsx
 ```
 
 - **23.2**: Commit and push
 
 ```bash
-cd ${LOCAL_REPO_ROOT}
 git add frontend
 git commit -m "Test frontend deployment"
 git push origin main
@@ -710,20 +774,21 @@ git push origin main
 
 ---
 
-## Step 24 — Test Backend-Only Deploy
+## Step 24 - Test Backend-Only Deploy
 
 `Local machine`
 
-- **24.1**: Change a file under
+- **24.1**: Change a file under `src/`
 
-```txt
-src/
+```bash
+cd ${LOCAL_REPO_ROOT}
+BACKEND_MAIN_FILE="src/main/java/$(printf '%s' "${LOCAL_REPO_NEW_GROUP_ID}" | tr . /)/${LOCAL_REPO_NEW_ARTIFACT_ID}/MainApplication.java"
+printf "\n// Backend-only deployment test: $(date -Iseconds)\n" >> "$BACKEND_MAIN_FILE"
 ```
 
 - **24.2**: Commit and push
 
 ```bash
-cd ${LOCAL_REPO_ROOT}
 git add src
 git commit -m "Test backend deployment"
 git push origin main
@@ -735,21 +800,23 @@ git push origin main
 
 ---
 
-## Step 25 — Test Full-Stack Deploy
+## Step 25 - Test Full-Stack Deploy
 
 `Local machine`
 
-- **25.1**: Change files under both
+- **25.1**: Change files under both `frontend/src/` and `src/`
 
-```txt
-frontend/src/
-src/
+```bash
+cd ${LOCAL_REPO_ROOT}
+BACKEND_MAIN_FILE="src/main/java/$(printf '%s' "${LOCAL_REPO_NEW_GROUP_ID}" | tr . /)/${LOCAL_REPO_NEW_ARTIFACT_ID}/MainApplication.java"
+
+printf "\n// Full-stack deployment test frontend: $(date -Iseconds)\n" >> frontend/src/main.tsx
+printf "\n// Full-stack deployment test backend: $(date -Iseconds)\n" >> "$BACKEND_MAIN_FILE"
 ```
 
 - **25.2**: Commit and push
 
 ```bash
-cd ${LOCAL_REPO_ROOT}
 git add frontend src
 git commit -m "Test full-stack deployment"
 git push origin main
@@ -758,6 +825,111 @@ git push origin main
 - **25.3**: Should build and deploy frontend
 - **25.4**: Should build and deploy backend
 - **25.5**: Should restart `${VPS_SYSTEMD_SERVICE}` once
+
+---
+
+## Step 26 - Setup PR Checks Protection
+
+`Local machine`
+
+- **26.1**: Create a test branch with both frontend and backend changes
+
+```bash
+cd ${LOCAL_REPO_ROOT}
+
+git switch main
+git pull origin main
+
+git switch -c test-pr-checks
+
+BACKEND_MAIN_FILE="src/main/java/$(printf '%s' "${LOCAL_REPO_NEW_GROUP_ID}" | tr . /)/${LOCAL_REPO_NEW_ARTIFACT_ID}/MainApplication.java"
+
+printf "\n// PR checks frontend test: $(date -Iseconds)\n" >> frontend/src/main.tsx
+printf "\n// PR checks backend test: $(date -Iseconds)\n" >> "$BACKEND_MAIN_FILE"
+
+git add frontend src
+git commit -m "Test PR checks"
+git push -u origin test-pr-checks
+```
+
+`GitHub UI`
+
+- **26.2**: Open GitHub repository in browser
+- **26.3**: Create a pull request from `test-pr-checks` into `main`
+- **26.4**: Open the PR checks section
+- **26.5**: Verify these checks run successfully
+
+```txt
+Backend Gradle Build and Test
+Frontend Build Lint and Test
+```
+
+- **26.6**: Wait until the PR workflow fully finishes
+
+```txt
+Do not configure the branch protection rule yet.
+First wait until the PR checks have completed successfully.
+
+GitHub can only show status checks in the branch protection search after those checks have already run in the repository.
+```
+
+- **26.7**: Open repository settings
+- **26.8**: Open `Settings -> Branches`
+- **26.9**: Click `Add classic branch protection rule`
+- **26.10**: Set branch name pattern
+
+```txt
+main
+```
+
+- **26.11**: Enable `Require a pull request before merging`
+- **26.12**: Disable/deselect `Require approvals`
+- **26.13**: Enable `Require status checks to pass before merging`
+- **26.14**: Search and select these status checks
+
+```txt
+Backend Gradle Build and Test
+Frontend Build Lint and Test
+```
+
+- **26.15**: Click `Create`
+
+- **26.16**: Expected result
+
+```txt
+main branch is protected.
+Pull requests are required before merging.
+Backend and frontend PR checks must pass before merging.
+Approvals are not required.
+```
+
+- **26.17**: Close the test PR without merging it
+
+```txt
+The test-pr-checks pull request exists only to make GitHub run and register the required status checks.
+After branch protection is created, close the PR without merging it.
+```
+
+`Local machine`
+
+- **26.18**: Return local repository back to `main`
+
+```bash
+cd ${LOCAL_REPO_ROOT}
+
+git switch main
+git pull origin main
+git branch -D test-pr-checks
+git push origin --delete test-pr-checks
+```
+
+- **26.19**: Expected result
+
+```txt
+Local repository is back on main.
+Local test branch is deleted.
+Remote test branch is deleted.
+```
 
 ---
 
