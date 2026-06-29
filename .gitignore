@@ -41,3 +41,5 @@ front-ui
 
 # Allow example VS Code configs
 !.vscode/*.example.json
+
+.local/

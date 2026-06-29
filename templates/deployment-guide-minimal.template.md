@@ -3,7 +3,6 @@
 ## Table of Contents
 
 - [Assumptions](#assumptions)
-- [Variables](#variables)
 - [Estimated Time](#estimated-time)
 - [Deployment Steps](#deployment-steps)
 - [Final Checks](#final-checks)
@@ -24,102 +23,6 @@
 - PostgreSQL is used as production database.
 - GitHub repository already exists.
 - GitHub Actions self-hosted runner will run on the VPS.
-
----
-
-## Variables
-
-Populate these variables before following the guide.
-
-<!-- DEPLOYMENT_VARIABLES_START -->
-
-```sh
-APP_NAME="starter"
-DOMAIN="starter.brunotot.com"
-VPS_IP="46.224.72.162"
-DEPLOY_USER="deploy"
-
-LOCAL_REPO_ROOT="$HOME/Desktop/private/java/starter"
-
-APP_DIR="/opt/apps/starter"
-FRONTEND_DIR="/opt/apps/starter/frontend"
-JAR_PATH="/opt/apps/starter/starter.jar"
-JAR_FILE="starter-0.0.1-SNAPSHOT.jar"
-ENV_PATH="/opt/apps/starter/.env"
-
-BACKEND_PORT="8081"
-
-DB_CONTAINER="starter-postgres"
-DB_NAME="starter"
-DB_USER="starter_user"
-DB_PASSWORD="REPLACE_WITH_STRONG_PASSWORD"
-DB_VOLUME="starter_postgres_data"
-
-SYSTEMD_SERVICE="starter.service"
-
-RUNNER_DIR="/opt/actions-runner/starter"
-RUNNER_LABEL="starter"
-RUNNER_NAME="starter-vps-main-01"
-```
-
-<!-- DEPLOYMENT_VARIABLES_END -->
-
-After variables are populated, run this from the folder containing this Markdown file to replace all variable placeholders in-place:
-
-````sh
-GUIDE_FILE="MINIMAL_VPS_DEPLOYMENT_GUIDE.md"
-VARS_FILE="$(mktemp)"
-
-awk '/<!-- DEPLOYMENT_VARIABLES_START -->/{flag=1; next} /<!-- DEPLOYMENT_VARIABLES_END -->/{flag=0} flag' "$GUIDE_FILE" \
-  | sed '/^```/d' > "$VARS_FILE"
-
-set -a
-. "$VARS_FILE"
-set +a
-
-python3 - "$GUIDE_FILE" <<'PY'
-from pathlib import Path
-import os
-import sys
-
-variable_names = [
-    "APP_NAME",
-    "DOMAIN",
-    "VPS_IP",
-    "DEPLOY_USER",
-    "LOCAL_REPO_ROOT",
-    "APP_DIR",
-    "FRONTEND_DIR",
-    "JAR_PATH",
-    "JAR_FILE",
-    "ENV_PATH",
-    "BACKEND_PORT",
-    "DB_CONTAINER",
-    "DB_NAME",
-    "DB_USER",
-    "DB_PASSWORD",
-    "DB_VOLUME",
-    "SYSTEMD_SERVICE",
-    "RUNNER_DIR",
-    "RUNNER_LABEL",
-    "RUNNER_NAME",
-]
-
-path = Path(sys.argv[1])
-text = path.read_text(encoding="utf-8")
-
-for name in variable_names:
-    value = os.environ.get(name)
-    if value is None:
-        raise SystemExit(f"Missing variable: {name}")
-
-    text = text.replace("${" + name + "}", value)
-
-path.write_text(text, encoding="utf-8")
-PY
-
-rm -f "$VARS_FILE"
-````
 
 ---
 
@@ -153,7 +56,7 @@ TTL:   7200
 - **1.4**: Verify the record
 
 ```bash
-dig @1.1.1.1 ${DOMAIN} A +short
+dig @1.1.1.1 ${APP_DOMAIN} A +short
 ```
 
 - **1.5**: Should output
@@ -171,10 +74,10 @@ ${VPS_IP}
 - **2.1**: Connect to the VPS
 
 ```bash
-ssh ${DEPLOY_USER}@${VPS_IP}
+ssh ${VPS_DEPLOY_USER}@${VPS_IP}
 ```
 
-- **2.2**: Should open a VPS shell as `${DEPLOY_USER}`
+- **2.2**: Should open a VPS shell as `${VPS_DEPLOY_USER}`
 
 ---
 
@@ -185,14 +88,14 @@ ssh ${DEPLOY_USER}@${VPS_IP}
 - **3.1**: Create app folders
 
 ```bash
-sudo mkdir -p ${FRONTEND_DIR}
-sudo chown -R ${DEPLOY_USER}:${DEPLOY_USER} ${APP_DIR}
+sudo mkdir -p ${VPS_FRONTEND_DIR}
+sudo chown -R ${VPS_DEPLOY_USER}:${VPS_DEPLOY_USER} ${VPS_APP_DIR}
 ```
 
 - **3.2**: Verify app folder
 
 ```bash
-ls -la ${APP_DIR}
+ls -la ${VPS_APP_DIR}
 ```
 
 - **3.3**: Should include
@@ -214,17 +117,17 @@ sudo apt update
 sudo apt install -y openjdk-21-jre-headless docker.io docker-compose-v2
 ```
 
-- **4.2**: Add `${DEPLOY_USER}` to the Docker group
+- **4.2**: Add `${VPS_DEPLOY_USER}` to the Docker group
 
 ```bash
-sudo usermod -aG docker ${DEPLOY_USER}
+sudo usermod -aG docker ${VPS_DEPLOY_USER}
 exit
 ```
 
 - **4.3**: Reconnect to the VPS
 
 ```bash
-ssh ${DEPLOY_USER}@${VPS_IP}
+ssh ${VPS_DEPLOY_USER}@${VPS_IP}
 ```
 
 - **4.4**: Verify installed tools
@@ -244,14 +147,14 @@ docker compose version
 - **5.1**: Create environment file
 
 ```bash
-nano ${ENV_PATH}
+nano ${VPS_ENV_PATH}
 ```
 
 - **5.2**: Add environment variables
 
 ```env
 SPRING_PROFILES_ACTIVE=prod
-SERVER_PORT=${BACKEND_PORT}
+SERVER_PORT=${APP_BACKEND_PORT}
 
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/${DB_NAME}
 SPRING_DATASOURCE_USERNAME=${DB_USER}
@@ -261,19 +164,19 @@ SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
 - **5.3**: Protect environment file
 
 ```bash
-chmod 600 ${ENV_PATH}
+chmod 600 ${VPS_ENV_PATH}
 ```
 
 - **5.4**: Verify permissions
 
 ```bash
-ls -la ${ENV_PATH}
+ls -la ${VPS_ENV_PATH}
 ```
 
 - **5.5**: Should output permissions similar to
 
 ```txt
--rw------- ${DEPLOY_USER} ${DEPLOY_USER}
+-rw------- ${VPS_DEPLOY_USER} ${VPS_DEPLOY_USER}
 ```
 
 ---
@@ -285,7 +188,7 @@ ls -la ${ENV_PATH}
 - **6.1**: Create Docker Compose file
 
 ```bash
-nano ${APP_DIR}/docker-compose.yml
+nano ${VPS_APP_DIR}/docker-compose.yml
 ```
 
 - **6.2**: Add PostgreSQL service
@@ -314,7 +217,7 @@ volumes:
 - **6.3**: Verify file exists
 
 ```bash
-ls -la ${APP_DIR}/docker-compose.yml
+ls -la ${VPS_APP_DIR}/docker-compose.yml
 ```
 
 ---
@@ -326,7 +229,7 @@ ls -la ${APP_DIR}/docker-compose.yml
 - **7.1**: Start PostgreSQL
 
 ```bash
-cd ${APP_DIR}
+cd ${VPS_APP_DIR}
 docker compose up -d postgres
 ```
 
@@ -405,7 +308,7 @@ ls -la build/libs
 - **9.4**: Should include
 
 ```txt
-${JAR_FILE}
+${VPS_JAR_FILE}
 ```
 
 ---
@@ -418,19 +321,19 @@ ${JAR_FILE}
 
 ```bash
 cd ${LOCAL_REPO_ROOT}
-scp build/libs/${JAR_FILE} ${DEPLOY_USER}@${VPS_IP}:${JAR_PATH}
+scp build/libs/${VPS_JAR_FILE} ${VPS_DEPLOY_USER}@${VPS_IP}:${VPS_JAR_PATH}
 ```
 
 - **10.2**: Verify uploaded JAR
 
 ```bash
-ssh ${DEPLOY_USER}@${VPS_IP} "ls -la ${JAR_PATH}"
+ssh ${VPS_DEPLOY_USER}@${VPS_IP} "ls -la ${VPS_JAR_PATH}"
 ```
 
 - **10.3**: Should output
 
 ```txt
-${JAR_PATH}
+${VPS_JAR_PATH}
 ```
 
 ---
@@ -442,7 +345,7 @@ ${JAR_PATH}
 - **11.1**: Create service file
 
 ```bash
-sudo nano /etc/systemd/system/${SYSTEMD_SERVICE}
+sudo nano /etc/systemd/system/${VPS_SYSTEMD_SERVICE}
 ```
 
 - **11.2**: Add service configuration
@@ -454,10 +357,10 @@ After=network.target docker.service
 Requires=docker.service
 
 [Service]
-User=${DEPLOY_USER}
-WorkingDirectory=${APP_DIR}
-EnvironmentFile=${ENV_PATH}
-ExecStart=/usr/bin/java -jar ${JAR_PATH}
+User=${VPS_DEPLOY_USER}
+WorkingDirectory=${VPS_APP_DIR}
+EnvironmentFile=${VPS_ENV_PATH}
+ExecStart=/usr/bin/java -jar ${VPS_JAR_PATH}
 Restart=always
 RestartSec=10
 SuccessExitStatus=143
@@ -470,14 +373,14 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable ${SYSTEMD_SERVICE}
-sudo systemctl start ${SYSTEMD_SERVICE}
+sudo systemctl enable ${VPS_SYSTEMD_SERVICE}
+sudo systemctl start ${VPS_SYSTEMD_SERVICE}
 ```
 
 - **11.4**: Check service status
 
 ```bash
-sudo systemctl status ${SYSTEMD_SERVICE} --no-pager
+sudo systemctl status ${VPS_SYSTEMD_SERVICE} --no-pager
 ```
 
 - **11.5**: Should include
@@ -495,7 +398,7 @@ Active: active (running)
 - **12.1**: Send local backend request
 
 ```bash
-curl -I http://127.0.0.1:${BACKEND_PORT}
+curl -I http://127.0.0.1:${APP_BACKEND_PORT}
 ```
 
 - **12.2**: Should output a valid HTTP response, for example
@@ -546,13 +449,13 @@ assets
 
 ```bash
 cd ${LOCAL_REPO_ROOT}
-rsync -avz --delete frontend/dist/ ${DEPLOY_USER}@${VPS_IP}:${FRONTEND_DIR}/
+rsync -avz --delete frontend/dist/ ${VPS_DEPLOY_USER}@${VPS_IP}:${VPS_FRONTEND_DIR}/
 ```
 
 - **14.2**: Verify uploaded files
 
 ```bash
-ssh ${DEPLOY_USER}@${VPS_IP} "ls -la ${FRONTEND_DIR}"
+ssh ${VPS_DEPLOY_USER}@${VPS_IP} "ls -la ${VPS_FRONTEND_DIR}"
 ```
 
 - **14.3**: Should include
@@ -577,13 +480,13 @@ sudo nano /etc/caddy/Caddyfile
 - **15.2**: Add site block
 
 ```caddyfile
-${DOMAIN} {
+${APP_DOMAIN} {
     handle /api/* {
-        reverse_proxy 127.0.0.1:${BACKEND_PORT}
+        reverse_proxy 127.0.0.1:${APP_BACKEND_PORT}
     }
 
     handle {
-        root * ${FRONTEND_DIR}
+        root * ${VPS_FRONTEND_DIR}
         try_files {path} /index.html
         file_server
     }
@@ -609,7 +512,7 @@ sudo systemctl reload caddy
 - **16.1**: Send HTTPS request
 
 ```bash
-curl -I https://${DOMAIN}
+curl -I https://${APP_DOMAIN}
 ```
 
 - **16.2**: Should output
@@ -634,7 +537,7 @@ HTTP/2 200
 
 ```bash
 sudo mkdir -p ${RUNNER_DIR}
-sudo chown -R ${DEPLOY_USER}:${DEPLOY_USER} ${RUNNER_DIR}
+sudo chown -R ${VPS_DEPLOY_USER}:${VPS_DEPLOY_USER} ${RUNNER_DIR}
 cd ${RUNNER_DIR}
 ```
 
@@ -660,7 +563,7 @@ Work folder:  press Enter for _work
 
 ```bash
 cd ${RUNNER_DIR}
-sudo ./svc.sh install ${DEPLOY_USER}
+sudo ./svc.sh install ${VPS_DEPLOY_USER}
 sudo ./svc.sh start
 sudo ./svc.sh status
 ```
@@ -720,7 +623,7 @@ sudo nano /etc/sudoers.d/${APP_NAME}-deploy
 - **20.2**: Add permission
 
 ```sudoers
-${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl restart ${SYSTEMD_SERVICE}, /usr/bin/systemctl restart ${APP_NAME}, /bin/systemctl restart ${SYSTEMD_SERVICE}, /bin/systemctl restart ${APP_NAME}
+${VPS_DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl restart ${VPS_SYSTEMD_SERVICE}, /usr/bin/systemctl restart ${APP_NAME}, /bin/systemctl restart ${VPS_SYSTEMD_SERVICE}, /bin/systemctl restart ${APP_NAME}
 ```
 
 - **20.3**: Validate sudoers file
@@ -734,8 +637,8 @@ sudo visudo -cf /etc/sudoers.d/${APP_NAME}-deploy
 
 ```bash
 sudo -k
-sudo -n /usr/bin/systemctl restart ${SYSTEMD_SERVICE}
-/usr/bin/systemctl status ${SYSTEMD_SERVICE} --no-pager
+sudo -n /usr/bin/systemctl restart ${VPS_SYSTEMD_SERVICE}
+/usr/bin/systemctl status ${VPS_SYSTEMD_SERVICE} --no-pager
 ```
 
 - **20.5**: Should restart without password prompt
@@ -803,7 +706,7 @@ git push origin main
 
 - **23.3**: Should build and deploy frontend only
 - **23.4**: Should skip backend build
-- **23.5**: Should not restart `${SYSTEMD_SERVICE}`
+- **23.5**: Should not restart `${VPS_SYSTEMD_SERVICE}`
 
 ---
 
@@ -828,7 +731,7 @@ git push origin main
 
 - **24.3**: Should build and deploy backend only
 - **24.4**: Should skip frontend build
-- **24.5**: Should restart `${SYSTEMD_SERVICE}`
+- **24.5**: Should restart `${VPS_SYSTEMD_SERVICE}`
 
 ---
 
@@ -854,7 +757,7 @@ git push origin main
 
 - **25.3**: Should build and deploy frontend
 - **25.4**: Should build and deploy backend
-- **25.5**: Should restart `${SYSTEMD_SERVICE}` once
+- **25.5**: Should restart `${VPS_SYSTEMD_SERVICE}` once
 
 ---
 
@@ -865,7 +768,7 @@ git push origin main
 - **1**: Check services
 
 ```bash
-sudo systemctl status ${SYSTEMD_SERVICE} --no-pager
+sudo systemctl status ${VPS_SYSTEMD_SERVICE} --no-pager
 sudo systemctl status caddy --no-pager
 docker ps
 ```
@@ -873,7 +776,7 @@ docker ps
 - **2**: Should show
 
 ```txt
-${SYSTEMD_SERVICE} active/running
+${VPS_SYSTEMD_SERVICE} active/running
 caddy.service active/running
 ${DB_CONTAINER} Up
 ```
@@ -883,7 +786,7 @@ ${DB_CONTAINER} Up
 - **3**: Check HTTPS
 
 ```bash
-curl -I https://${DOMAIN}
+curl -I https://${APP_DOMAIN}
 ```
 
 - **4**: Should output
@@ -899,19 +802,19 @@ HTTP/2 200
 Check backend logs:
 
 ```bash
-sudo journalctl -u ${SYSTEMD_SERVICE} --no-pager -n 100
+sudo journalctl -u ${VPS_SYSTEMD_SERVICE} --no-pager -n 100
 ```
 
 Follow backend logs:
 
 ```bash
-sudo journalctl -u ${SYSTEMD_SERVICE} -f
+sudo journalctl -u ${VPS_SYSTEMD_SERVICE} -f
 ```
 
 Restart backend:
 
 ```bash
-sudo systemctl restart ${SYSTEMD_SERVICE}
+sudo systemctl restart ${VPS_SYSTEMD_SERVICE}
 ```
 
 Check Caddy logs:
@@ -935,8 +838,8 @@ docker exec -it ${DB_CONTAINER} psql -U ${DB_USER} -d ${DB_NAME}
 Create database backup:
 
 ```bash
-mkdir -p ${APP_DIR}/backups
-docker exec ${DB_CONTAINER} pg_dump -U ${DB_USER} -d ${DB_NAME} > ${APP_DIR}/backups/${DB_NAME}_$(date +%Y-%m-%d_%H-%M-%S).sql
+mkdir -p ${VPS_APP_DIR}/backups
+docker exec ${DB_CONTAINER} pg_dump -U ${DB_USER} -d ${DB_NAME} > ${VPS_APP_DIR}/backups/${DB_NAME}_$(date +%Y-%m-%d_%H-%M-%S).sql
 ```
 
 Manual frontend deploy:
@@ -947,7 +850,7 @@ npm ci
 npm run build
 
 cd ${LOCAL_REPO_ROOT}
-rsync -avz --delete frontend/dist/ ${DEPLOY_USER}@${VPS_IP}:${FRONTEND_DIR}/
+rsync -avz --delete frontend/dist/ ${VPS_DEPLOY_USER}@${VPS_IP}:${VPS_FRONTEND_DIR}/
 ```
 
 Manual backend deploy:
@@ -955,6 +858,6 @@ Manual backend deploy:
 ```bash
 cd ${LOCAL_REPO_ROOT}
 ./gradlew clean bootJar
-scp build/libs/${JAR_FILE} ${DEPLOY_USER}@${VPS_IP}:${JAR_PATH}
-ssh ${DEPLOY_USER}@${VPS_IP} "sudo systemctl restart ${SYSTEMD_SERVICE} && sudo systemctl status ${SYSTEMD_SERVICE} --no-pager"
+scp build/libs/${VPS_JAR_FILE} ${VPS_DEPLOY_USER}@${VPS_IP}:${VPS_JAR_PATH}
+ssh ${VPS_DEPLOY_USER}@${VPS_IP} "sudo systemctl restart ${VPS_SYSTEMD_SERVICE} && sudo systemctl status ${VPS_SYSTEMD_SERVICE} --no-pager"
 ```
