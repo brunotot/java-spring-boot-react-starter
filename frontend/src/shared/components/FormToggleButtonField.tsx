@@ -7,6 +7,7 @@ type ToggleButtonGroupSlotProps = {
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type FormToggleButtonFieldProps<TFieldValues extends FieldValues, TValue extends {}> = {
   name: FieldPath<TFieldValues>;
   control: Control<TFieldValues>;
@@ -18,6 +19,7 @@ export type FormToggleButtonFieldProps<TFieldValues extends FieldValues, TValue 
   rgoSlotProps?: ToggleButtonGroupSlotProps;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export function FormToggleButtonField<TFieldValues extends FieldValues, TValue extends {}>({
   name,
   control,
