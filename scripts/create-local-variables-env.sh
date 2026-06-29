@@ -67,6 +67,7 @@ VPS_FRONTEND_DIR=/opt/apps/starter/frontend
 VPS_JAR_PATH=/opt/apps/starter/starter.jar
 
 # Name of the backend JAR file produced by the local Gradle build.
+# TODO: IMPORTANT: {NAME}-0.0.1-SNAPSHOT.jar -> {NAME} should be the same as the {LOCAL_REPO_NEW_ARTIFACT_ID}
 VPS_JAR_FILE=starter-0.0.1-SNAPSHOT.jar
 
 # Full path to the production environment file on the VPS.
