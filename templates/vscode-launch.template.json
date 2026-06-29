@@ -3,9 +3,9 @@
   "configurations": [
     {
       "type": "java",
-      "name": "StarterApplication",
+      "name": "MainApplication",
       "request": "launch",
-      "mainClass": "com.brunotot.starter.StarterApplication",
+      "mainClass": "${LOCAL_REPO_NEW_GROUP_ID}.${LOCAL_REPO_NEW_ARTIFACT_ID}.MainApplication",
       "vmArgs": "-Dspring.profiles.active=dev",
       "env": {
         "SPRING_DATASOURCE_URL": "${LOCAL_SPRING_DATASOURCE_URL}",
