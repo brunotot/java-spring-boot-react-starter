@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
+    "test": "echo \"No frontend tests configured yet\"",
     "preview": "vite preview --port 3000"
   },
   "dependencies": {
