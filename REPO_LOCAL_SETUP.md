@@ -30,7 +30,13 @@ mkdir -p .vscode && ./scripts/substitute-vars.sh --vars-file=.local/variables.en
 ./scripts/substitute-vars.sh --vars-file=.local/variables.env --input-file=templates/deployment-guide-minimal.template.md --output-file=.local/DEPLOYMENT_GUIDE_MINIMAL.gen.md
 ```
 
-# 6: Apply project-specific patches
+# 6: Generate `.github/workflows/deploy.yml` file
+
+```bash
+./scripts/substitute-vars.sh --vars-file=.local/variables.env --input-file=templates/deploy.template.yml --output-file=.github/workflows/deploy.yml --ignore-missing=true
+```
+
+# 7: Apply project-specific patches
 
 ```bash
 ./scripts/rename-backend-package.sh \
@@ -40,7 +46,7 @@ mkdir -p .vscode && ./scripts/substitute-vars.sh --vars-file=.local/variables.en
   --new-artifact="$(./scripts/get-local-variable.sh --key=LOCAL_REPO_NEW_ARTIFACT_ID)"
 ```
 
-# 7: Add, commit, and push changes to your local repository
+# 8: Add, commit, and push changes to your local repository
 
 ```bash
 git add . && git commit -m "Initial local setup" && git push

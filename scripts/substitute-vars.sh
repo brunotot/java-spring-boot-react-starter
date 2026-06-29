@@ -4,6 +4,7 @@ set -euo pipefail
 VARS_FILE=""
 INPUT_FILE=""
 OUTPUT_FILE=""
+IGNORE_MISSING="false"
 
 for arg in "$@"; do
   case "$arg" in
@@ -16,6 +17,9 @@ for arg in "$@"; do
     --output-file=*)
       OUTPUT_FILE="${arg#*=}"
       ;;
+    --ignore-missing=*)
+      IGNORE_MISSING="${arg#*=}"
+      ;;
     *)
       echo "Unknown argument: $arg" >&2
       exit 1
@@ -24,7 +28,12 @@ for arg in "$@"; do
 done
 
 if [ -z "$VARS_FILE" ] || [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
-  echo "Usage: $0 --vars-file=path --input-file=path --output-file=path" >&2
+  echo "Usage: $0 --vars-file=path --input-file=path --output-file=path [--ignore-missing=true|false]" >&2
+  exit 1
+fi
+
+if [ "$IGNORE_MISSING" != "true" ] && [ "$IGNORE_MISSING" != "false" ]; then
+  echo "Invalid value for --ignore-missing: $IGNORE_MISSING (expected true or false)" >&2
   exit 1
 fi
 
@@ -39,7 +48,7 @@ if [ ! -f "$INPUT_FILE" ]; then
 fi
 
 perl -Mstrict -Mwarnings -e '
-  my ($vars_file, $input_file, $output_file) = @ARGV;
+  my ($vars_file, $input_file, $output_file, $ignore_missing) = @ARGV;
 
   open my $vf, "<", $vars_file or die "Cannot open variables file: $!\n";
 
@@ -77,11 +86,11 @@ perl -Mstrict -Mwarnings -e '
         }
   /ge;
 
-  if (%missing) {
+  if ($ignore_missing ne "true" && %missing) {
     die "Missing values for placeholders: " . join(", ", sort keys %missing) . "\n";
   }
 
   open my $out, ">", $output_file or die "Cannot write output file: $!\n";
   print $out $text;
   close $out;
-' "$VARS_FILE" "$INPUT_FILE" "$OUTPUT_FILE"
+' "$VARS_FILE" "$INPUT_FILE" "$OUTPUT_FILE" "$IGNORE_MISSING"

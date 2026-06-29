@@ -1,0 +1,135 @@
+name: Deploy Starter
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, ${APP_NAME}]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed areas
+        id: changes
+        shell: bash
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          echo "Before: $BEFORE"
+          echo "After:  $AFTER"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "First push or unknown previous commit. Deploying both frontend and backend."
+            echo "frontend_changed=true" >> "$GITHUB_OUTPUT"
+            echo "backend_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED_FILES="$(git diff --name-only "$BEFORE" "$AFTER")"
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          if echo "$CHANGED_FILES" | grep -qE '^frontend/'; then
+            echo "frontend_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "frontend_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -qE '^(src/|gradle/|gradlew|gradlew\.bat|build\.gradle|build\.gradle\.kts|settings\.gradle|settings\.gradle\.kts|pom\.xml)'; then
+            echo "backend_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure private npm registry
+        if: steps.changes.outputs.frontend_changed == 'true'
+        shell: bash
+        env:
+          RGO_NPM_REGISTRY: ${{ secrets.RGO_NPM_REGISTRY }}
+          RGO_NPM_TOKEN: ${{ secrets.RGO_NPM_TOKEN }}
+        run: |
+          if [ -z "$RGO_NPM_REGISTRY" ]; then
+            echo "Missing RGO_NPM_REGISTRY secret"
+            exit 1
+          fi
+
+          if [ -z "$RGO_NPM_TOKEN" ]; then
+            echo "Missing RGO_NPM_TOKEN secret"
+            exit 1
+          fi
+
+          REGISTRY_HOST_PATH="${RGO_NPM_REGISTRY#https://}"
+          REGISTRY_HOST_PATH="${REGISTRY_HOST_PATH#http://}"
+          REGISTRY_HOST_PATH="${REGISTRY_HOST_PATH%/}"
+
+          cat > frontend/.npmrc <<EOF
+          @rgo:registry=${RGO_NPM_REGISTRY}
+          //${REGISTRY_HOST_PATH}/:_authToken=${RGO_NPM_TOKEN}
+          always-auth=true
+          EOF
+
+      - name: Build frontend
+        if: steps.changes.outputs.frontend_changed == 'true'
+        shell: bash
+        run: |
+          cd frontend
+
+          if [ -f package-lock.json ]; then
+            npm ci
+            npm run build
+          elif [ -f pnpm-lock.yaml ]; then
+            corepack enable
+            pnpm install --frozen-lockfile
+            pnpm build
+          elif [ -f yarn.lock ]; then
+            corepack enable
+            yarn install --frozen-lockfile
+            yarn build
+          else
+            npm install
+            npm run build
+          fi
+
+      - name: Deploy frontend
+        if: steps.changes.outputs.frontend_changed == 'true'
+        shell: bash
+        run: |
+          rsync -av --delete frontend/dist/ ${VPS_FRONTEND_DIR}/
+
+      - name: Build backend
+        if: steps.changes.outputs.backend_changed == 'true'
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean bootJar
+
+      - name: Deploy backend
+        if: steps.changes.outputs.backend_changed == 'true'
+        shell: bash
+        run: |
+          JAR_FILE="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*plain*' | head -n 1)"
+
+          if [ -z "$JAR_FILE" ]; then
+            echo "No executable Spring Boot JAR found in build/libs"
+            exit 1
+          fi
+
+          echo "Deploying JAR: $JAR_FILE"
+
+          cp "$JAR_FILE" ${VPS_JAR_PATH}
+          sudo -n /usr/bin/systemctl restart ${VPS_SYSTEMD_SERVICE}
+          /usr/bin/systemctl status ${VPS_SYSTEMD_SERVICE} --no-pager
+
+      - name: Nothing to deploy
+        if: steps.changes.outputs.frontend_changed != 'true' && steps.changes.outputs.backend_changed != 'true'
+        run: |
+          echo "No frontend or backend deployment-relevant files changed."
