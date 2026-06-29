@@ -2,6 +2,46 @@
 
 Spring Boot starter template focused on practical enterprise defaults: layered architecture, Flyway-managed schema, session-based auth, method-level authorization, searchable entities, and full controller integration testing.
 
+## Table Of Contents
+
+- [Template Repository Usage](#template-repository-usage)
+- [Quickstart](#quickstart)
+- [Architecture And Infrastructure Decisions](#architecture-and-infrastructure-decisions)
+- [Local Runtime Configuration](#local-runtime-configuration)
+- [Prerequisites](#prerequisites)
+- [Run The Application](#run-the-application)
+- [Testing](#testing)
+- [Build](#build)
+
+## Template Repository Usage
+
+This repository is intended to be used as a template, not as a direct development repository.
+
+To start a new custom project from this template:
+
+1. In GitHub, use this repository's **Use this template** action.
+2. Create your new repository from the generated template project.
+3. In your newly created repository, follow the local setup guide: [docs/REPO_LOCAL_SETUP.md](docs/REPO_LOCAL_SETUP.md).
+
+The local setup guide is the source of truth for preparing an end-to-end-ready repository.
+
+## Quickstart
+
+After creating your repository from this template, run:
+
+```bash
+chmod +x ./scripts/*.sh
+./scripts/create-local-variables-env.sh
+```
+
+Before running the final setup step, carefully review and update `.local/variables.env` with values for your project.
+
+```bash
+./scripts/run-local-setup-steps.sh
+```
+
+Then complete and verify the full setup using [docs/REPO_LOCAL_SETUP.md](docs/REPO_LOCAL_SETUP.md).
+
 ## Architecture And Infrastructure Decisions
 
 ### 1) Runtime platform and build
