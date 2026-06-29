@@ -6,6 +6,8 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, type RouteObject, RouterProvider } from "react-router";
 import "./main.css";
 
+// Marker change for PR check validation.
+
 // dev-only console filter for Emotion's nth-child SSR warning
 if (import.meta.env?.DEV) {
   const originalError = console.error;
