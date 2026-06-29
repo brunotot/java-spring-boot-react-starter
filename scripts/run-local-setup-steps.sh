@@ -38,7 +38,13 @@ bash ./scripts/substitute-vars.sh \
   --input-file=templates/deployment-guide-minimal.template.md \
   --output-file=.local/DEPLOYMENT_GUIDE_MINIMAL.gen.md
 
-echo "Step 4: Generate .github/workflows/deploy.yml"
+echo "Step 4: Generate .local/DELETE_VPS_APP_GUIDE_MINIMAL.gen.md"
+bash ./scripts/substitute-vars.sh \
+  --vars-file=.local/variables.env \
+  --input-file=templates/delete-vps-app-guide.template.md \
+  --output-file=.local/DELETE_VPS_APP_GUIDE_MINIMAL.gen.md
+
+echo "Step 5: Generate .github/workflows/deploy.yml"
 mkdir -p .github/workflows
 bash ./scripts/substitute-vars.sh \
   --vars-file=.local/variables.env \
@@ -46,7 +52,7 @@ bash ./scripts/substitute-vars.sh \
   --output-file=.github/workflows/deploy.yml \
   --ignore-missing=true
 
-echo "Step 5: Apply project-specific patches"
+echo "Step 6: Apply project-specific patches"
 bash ./scripts/rename-backend-package.sh \
   --old-group="$(bash ./scripts/get-local-variable.sh --key=LOCAL_REPO_OLD_GROUP_ID)" \
   --old-artifact="$(bash ./scripts/get-local-variable.sh --key=LOCAL_REPO_OLD_ARTIFACT_ID)" \
