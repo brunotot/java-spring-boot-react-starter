@@ -39,3 +39,9 @@ mkdir -p .vscode && ./scripts/substitute-vars.sh --vars-file=.local/variables.en
   --new-group="$(./scripts/get-local-variable.sh --key=LOCAL_REPO_NEW_GROUP_ID)" \
   --new-artifact="$(./scripts/get-local-variable.sh --key=LOCAL_REPO_NEW_ARTIFACT_ID)"
 ```
+
+# 7: Add, commit, and push changes to your local repository
+
+```bash
+git add . && git commit -m "Initial local setup" && git push
+```
